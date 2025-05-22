@@ -593,23 +593,31 @@
             ];
             const viewBoxWidth = 1683;
             const viewBoxHeight = 1039;
+
+           const minX = Math.min(...svgRectData.map(d => d.x));
+           const minY = Math.min(...svgRectData.map(d => d.y));
+
             function createDots() {
                 svgRectData.forEach(data => {
                     const dot = document.createElement('div');
                     dot.classList.add('dot');
+
+                    const normX = data.x - minX;
+                    const normY = data.y - minY;
+
                     dot.style.width = `${data.width}px`;
                     dot.style.height = `${data.height}px`;
-                    dot.style.left = `${data.x}px`;
-                    dot.style.top = `${data.y}px`;
+                    dot.style.left = `${normX}px`;
+                    dot.style.top = `${normY}px`;
                     dotContainer.appendChild(dot);
                     initialDotData.set(dot, {
-                        initialX: data.x,
-                        initialY: data.y,
+                        initialX: normX,
+                        initialY: normY,
                         initialWidth: data.width,
                         initialHeight: data.height,
                         initialRx: data.rx,
-                        centerX: data.x + data.width / 2,
-                        centerY: data.y + data.height / 2,
+                        centerX: normX + data.width / 2,
+                        centerY: normY + data.height / 2,
                         initialEffectiveRadius: data.width / 2
                     });
                     dots.push(dot);
@@ -620,62 +628,72 @@
             const hoverRadius = 80; 
             const maxGrowthFactor = 1.5;
             const growthDecayPower = 2; 
-            function handleMouseMove(event) {
-                if (dots.length === 0) return;
-                const containerRect = dotContainer.getBoundingClientRect();
-                const mouseX = event.clientX - containerRect.left;
-                const mouseY = event.clientY - containerRect.top;
-                const scaleX = viewBoxWidth / containerRect.width;
-                const scaleY = viewBoxHeight / containerRect.height;
-                const cursorX = mouseX * scaleX;
-                const cursorY = mouseY * scaleY;
-                dots.forEach(dot => {
-                    const initialData = initialDotData.get(dot);
-                    const currentCx = initialData.centerX;
-                    const currentCy = initialData.centerY;
-                    const initialEffectiveRadius = initialData.initialEffectiveRadius;
-                    const distance = Math.sqrt(
-                        Math.pow(cursorX - currentCx, 2) + Math.pow(cursorY - currentCy, 2)
-                    );
+            
+        function handleMouseMove(event) {
+        if (dots.length === 0) return;
 
-                    let newEffectiveRadius = initialEffectiveRadius;
+        const containerRect = dotContainer.getBoundingClientRect();
 
-                    if (distance < hoverRadius) {
-                        const normalizedDistance = distance / hoverRadius;
-                        const growthFactor = maxGrowthFactor * (1 - Math.pow(normalizedDistance, growthDecayPower));
+        // Calculamos posición del cursor relativa al container (normalizada)
+        const mouseX = event.clientX - containerRect.left;
+        const mouseY = event.clientY - containerRect.top;
 
-                        newEffectiveRadius = initialEffectiveRadius + (initialEffectiveRadius * Math.max(0, growthFactor));
-                        newEffectiveRadius = Math.min(newEffectiveRadius, initialEffectiveRadius * maxGrowthFactor);
+        // Escalamos el mouse para el sistema interno (el mismo que los dots normalizados)
+        const scaleX = viewBoxWidth / (containerRect.width - (minX * 2)); // restamos margen de normalización
+        const scaleY = viewBoxHeight / (containerRect.height - (minY * 2));
 
-                        const baseHue = 227; 
-                        const baseSaturation = 17;
-                        const baseLightness = 31;
-                        const newLightness = baseLightness + (growthFactor * 10); 
-                        dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
-                    } else {
-                        newEffectiveRadius = initialEffectiveRadius;
-                        dot.style.backgroundColor = '#42495F'; 
-                    }
+        const cursorX = mouseX * scaleX;
+        const cursorY = mouseY * scaleY;
 
-                    const newSize = newEffectiveRadius * 2;
-                    dot.style.width = `${newSize}px`;
-                    dot.style.height = `${newSize}px`;
-                    dot.style.left = `${currentCx - newEffectiveRadius}px`;
-                    dot.style.top = `${currentCy - newEffectiveRadius}px`;
-                });
-            }
-            function handleMouseLeave() {
-                dots.forEach(dot => {
-                    const initialData = initialDotData.get(dot);
-                    dot.style.width = `${initialData.initialWidth}px`;
-                    dot.style.height = `${initialData.initialHeight}px`;
-                    dot.style.left = `${initialData.initialX}px`;
-                    dot.style.top = `${initialData.initialY}px`;
-                    dot.style.backgroundColor = '#42495F'; 
-                });
+        dots.forEach(dot => {
+            const initialData = initialDotData.get(dot);
+            const currentCx = initialData.centerX;
+            const currentCy = initialData.centerY;
+            const initialEffectiveRadius = initialData.initialEffectiveRadius;
+
+            const distance = Math.sqrt(
+                Math.pow(cursorX - currentCx, 2) + Math.pow(cursorY - currentCy, 2)
+            );
+
+            let newEffectiveRadius = initialEffectiveRadius;
+
+            if (distance < hoverRadius) {
+                const normalizedDistance = distance / hoverRadius;
+                const growthFactor = maxGrowthFactor * (1 - Math.pow(normalizedDistance, growthDecayPower));
+
+                newEffectiveRadius = initialEffectiveRadius + (initialEffectiveRadius * Math.max(0, growthFactor));
+                newEffectiveRadius = Math.min(newEffectiveRadius, initialEffectiveRadius * maxGrowthFactor);
+
+                const baseHue = 227;
+                const baseSaturation = 17;
+                const baseLightness = 31;
+                const newLightness = baseLightness + (growthFactor * 10);
+
+                dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
+            } else {
+                newEffectiveRadius = initialEffectiveRadius;
+                dot.style.backgroundColor = '#42495F';
             }
 
-            dotContainer.addEventListener('mousemove', handleMouseMove);
-            dotContainer.addEventListener('mouseleave', handleMouseLeave);
+            const newSize = newEffectiveRadius * 2;
+            dot.style.width = `${newSize}px`;
+            dot.style.height = `${newSize}px`;
+            dot.style.left = `${currentCx - newEffectiveRadius}px`;
+            dot.style.top = `${currentCy - newEffectiveRadius}px`;
         });
+    }
+ function handleMouseLeave() {
+        dots.forEach(dot => {
+            const initialData = initialDotData.get(dot);
+            dot.style.width = `${initialData.initialWidth}px`;
+            dot.style.height = `${initialData.initialHeight}px`;
+            dot.style.left = `${initialData.initialX}px`;
+            dot.style.top = `${initialData.initialY}px`;
+            dot.style.backgroundColor = '#42495F';
+        });
+    }
+
+    dotContainer.addEventListener('mousemove', handleMouseMove);
+    dotContainer.addEventListener('mouseleave', handleMouseLeave);
+});
  
