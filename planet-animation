@@ -1,4 +1,4 @@
- <script>
+
         document.addEventListener('DOMContentLoaded', () => {
             const dotContainer = document.getElementById('dot-container');
             let dots = []; 
@@ -678,4 +678,4 @@
             dotContainer.addEventListener('mousemove', handleMouseMove);
             dotContainer.addEventListener('mouseleave', handleMouseLeave);
         });
-    </script>
+ 
