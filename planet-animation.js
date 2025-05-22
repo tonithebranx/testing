@@ -652,53 +652,94 @@
   window.addEventListener('resize', updateDotsLayout);
 
   const hoverRadius = 80; 
-  const maxGrowthFactor = 3;
+  const maxGrowthFactor = 2;
   const growthDecayPower = 2;
 
-  function handleMouseMove(event) {
-    if (dots.length === 0) return;
-    const containerRect = dotContainer.getBoundingClientRect();
+function handleMouseMove(event) {
+  if (dots.length === 0) return;
+  const containerRect = dotContainer.getBoundingClientRect();
 
-    // Mouse relative to container (no scaling here, dots are scaled)
-    const mouseX = event.clientX - containerRect.left;
-    const mouseY = event.clientY - containerRect.top;
+  const mouseX = event.clientX - containerRect.left;
+  const mouseY = event.clientY - containerRect.top;
 
-    dots.forEach(dot => {
-      const data = initialDotData.get(dot);
+  // 1) Calculate distances for all dots
+  let dotsWithDistance = dots.map(dot => {
+    const data = initialDotData.get(dot);
+    const dist = Math.sqrt(
+      Math.pow(mouseX - data.scaledCenterX, 2) +
+      Math.pow(mouseY - data.scaledCenterY, 2)
+    );
+    return { dot, data, dist };
+  });
 
-      // Distance in scaled coords
-      const distance = Math.sqrt(
-        Math.pow(mouseX - data.scaledCenterX, 2) + Math.pow(mouseY - data.scaledCenterY, 2)
-      );
+  // 2) Filter dots within hoverRadius
+  dotsWithDistance = dotsWithDistance.filter(d => d.dist < hoverRadius);
 
-      let newEffectiveRadius = data.scaledRadius;
+  // 3) Sort by distance ascending (closest first)
+  dotsWithDistance.sort((a, b) => a.dist - b.dist);
 
-      if (distance < hoverRadius) {
-        const normalizedDistance = distance / hoverRadius;
-        const growthFactor = maxGrowthFactor * (1 - Math.pow(normalizedDistance, growthDecayPower));
+  // 4) Define growth tiers and counts
+  const tiers = [
+    { count: 2, maxFactor: 1.5 },
+    { count: 4, maxFactor: 1.25 },
+    { count: 6, maxFactor: 1.1 }
+  ];
 
-        newEffectiveRadius = data.scaledRadius + (data.scaledRadius * Math.max(0, growthFactor));
-        newEffectiveRadius = Math.min(newEffectiveRadius, data.scaledRadius * maxGrowthFactor);
+  // 5) Assign growth factors by tier with smooth interpolation inside each tier
+  let index = 0;
+  dotsWithDistance.forEach(({ dot, data, dist }) => {
+    let growthFactor = 1; // default no growth
 
-        const baseHue = 227; 
-        const baseSaturation = 17;
-        const baseLightness = 31;
-        const newLightness = baseLightness + (growthFactor * 10); 
+    for (const tier of tiers) {
+      if (index < tier.count) {
+        // normalize distance inside tier [0..maxDist]
+        // maxDist here can be hoverRadius or max distance of that tier
+        const maxDistInTier = hoverRadius;
+        const normalizedDist = dist / maxDistInTier;
 
-        dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
-      } else {
-        newEffectiveRadius = data.scaledRadius;
-        dot.style.backgroundColor = '#42495F'; 
+        // Smooth growth factor decreasing from maxFactor to 1 within tier
+        growthFactor = tier.maxFactor - (tier.maxFactor - 1) * normalizedDist;
+
+        break;
       }
+      index++;
+    }
 
-      const newSize = newEffectiveRadius * 2;
-      dot.style.width = `${newSize}px`;
-      dot.style.height = `${newSize}px`;
-      dot.style.left = `${data.scaledCenterX - newEffectiveRadius}px`;
-      dot.style.top = `${data.scaledCenterY - newEffectiveRadius}px`;
-    });
-  }
+    // If dot is outside all tiers (index > sum counts), growthFactor stays 1
 
+    const newEffectiveRadius = data.scaledRadius * growthFactor;
+
+    dot.style.width = `${newEffectiveRadius * 2}px`;
+    dot.style.height = `${newEffectiveRadius * 2}px`;
+    dot.style.left = `${data.scaledCenterX - newEffectiveRadius}px`;
+    dot.style.top = `${data.scaledCenterY - newEffectiveRadius}px`;
+
+    // Color changes as before with growth factor
+    if (growthFactor > 1) {
+      const baseHue = 227;
+      const baseSaturation = 17;
+      const baseLightness = 31;
+      const newLightness = baseLightness + (growthFactor - 1) * 50; // more contrast
+      dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
+    } else {
+      dot.style.backgroundColor = '#42495F';
+    }
+
+    index++;
+  });
+
+  // Reset dots outside hoverRadius to original size/color
+  dots.forEach(dot => {
+    if (!dotsWithDistance.find(d => d.dot === dot)) {
+      const data = initialDotData.get(dot);
+      dot.style.width = `${data.scaledRadius * 2}px`;
+      dot.style.height = `${data.scaledRadius * 2}px`;
+      dot.style.left = `${data.scaledCenterX - data.scaledRadius}px`;
+      dot.style.top = `${data.scaledCenterY - data.scaledRadius}px`;
+      dot.style.backgroundColor = '#42495F';
+    }
+  });
+}
   function handleMouseLeave() {
     updateDotsLayout();
     dots.forEach(dot => {
