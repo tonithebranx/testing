@@ -618,8 +618,8 @@
 
             createDots();
             const hoverRadius = 80; 
-            const maxGrowthFactor = 3;
-            const growthDecayPower = 2; 
+            const maxGrowthFactor = 2;
+            const growthDecayPower = 3; 
             function handleMouseMove(event) {
                 if (dots.length === 0) return;
                 const containerRect = dotContainer.getBoundingClientRect();
@@ -649,7 +649,7 @@
 
                         const baseHue = 227; 
                         const baseSaturation = 17;
-                        const baseLightness = 31;
+                        const baseLightness = 24;
                         const newLightness = baseLightness + (growthFactor * 10); 
                         dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
                     } else {
