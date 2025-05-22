@@ -652,7 +652,7 @@
   window.addEventListener('resize', updateDotsLayout);
 
   const hoverRadius = 80; 
-  const maxGrowthFactor = 1.5;
+  const maxGrowthFactor = 3;
   const growthDecayPower = 2;
 
   function handleMouseMove(event) {
