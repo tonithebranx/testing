@@ -626,8 +626,8 @@
 
             createDots();
             const hoverRadius = 80; 
-            const maxGrowthFactor = 1.5;
-            const growthDecayPower = 2; 
+            const maxGrowthFactor = 2;
+            const growthDecayPower = 3; 
             
         function handleMouseMove(event) {
         if (dots.length === 0) return;
@@ -664,7 +664,7 @@
                 newEffectiveRadius = initialEffectiveRadius + (initialEffectiveRadius * Math.max(0, growthFactor));
                 newEffectiveRadius = Math.min(newEffectiveRadius, initialEffectiveRadius * maxGrowthFactor);
 
-                const baseHue = 0;
+                const baseHue = 227;
                 const baseSaturation = 0;
                 const baseLightness = 0;
                 const newLightness = baseLightness + (growthFactor * 0);
