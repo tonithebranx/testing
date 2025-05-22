@@ -619,7 +619,7 @@
             createDots();
             const hoverRadius = 80; 
             const maxGrowthFactor = 2;
-            const growthDecayPower = 3; 
+            const growthDecayPower = 2; 
             function handleMouseMove(event) {
                 if (dots.length === 0) return;
                 const containerRect = dotContainer.getBoundingClientRect();
