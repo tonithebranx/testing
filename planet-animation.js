@@ -664,10 +664,10 @@
                 newEffectiveRadius = initialEffectiveRadius + (initialEffectiveRadius * Math.max(0, growthFactor));
                 newEffectiveRadius = Math.min(newEffectiveRadius, initialEffectiveRadius * maxGrowthFactor);
 
-                const baseHue = 227;
-                const baseSaturation = 17;
-                const baseLightness = 31;
-                const newLightness = baseLightness + (growthFactor * 10);
+                const baseHue = 0;
+                const baseSaturation = 0;
+                const baseLightness = 0;
+                const newLightness = baseLightness + (growthFactor * 0);
 
                 dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
             } else {
