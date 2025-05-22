@@ -671,9 +671,10 @@ function handleMouseMove(event) {
   dotsWithDistance.sort((a, b) => a.dist - b.dist);
 
   const tiers = [
-    { count: 2, maxFactor: 3 },
-    { count: 4, maxFactor: 2 },
-    { count: 6, maxFactor: 1.5 }
+    { count: 1, maxFactor: 3 },
+    { count: 2, maxFactor: 2 },
+    { count: 4, maxFactor: 1.5 },
+    { count: 6, maxFactor: 1.2 }
   ];
 
   let tierIndex = 0; // para recorrer tiers
