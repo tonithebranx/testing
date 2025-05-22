@@ -652,8 +652,7 @@
   window.addEventListener('resize', updateDotsLayout);
 
   const hoverRadius = 80; 
-  const maxGrowthFactor = 5;
-  const growthDecayPower = 2;
+  const maxGrowthFactor = 2; // fallback
 
 function handleMouseMove(event) {
   if (dots.length === 0) return;
@@ -662,50 +661,39 @@ function handleMouseMove(event) {
   const mouseX = event.clientX - containerRect.left;
   const mouseY = event.clientY - containerRect.top;
 
-  // 1) Calculate distances for all dots
   let dotsWithDistance = dots.map(dot => {
     const data = initialDotData.get(dot);
-    const dist = Math.sqrt(
-      Math.pow(mouseX - data.scaledCenterX, 2) +
-      Math.pow(mouseY - data.scaledCenterY, 2)
-    );
+    const dist = Math.hypot(mouseX - data.scaledCenterX, mouseY - data.scaledCenterY);
     return { dot, data, dist };
   });
 
-  // 2) Filter dots within hoverRadius
   dotsWithDistance = dotsWithDistance.filter(d => d.dist < hoverRadius);
-
-  // 3) Sort by distance ascending (closest first)
   dotsWithDistance.sort((a, b) => a.dist - b.dist);
 
-  // 4) Define growth tiers and counts
   const tiers = [
-    { count: 2, maxFactor: 1.5 },
-    { count: 4, maxFactor: 1.25 },
-    { count: 6, maxFactor: 1.1 }
+    { count: 2, maxFactor: 3 },
+    { count: 4, maxFactor: 2 },
+    { count: 6, maxFactor: 1.5 }
   ];
 
-  // 5) Assign growth factors by tier with smooth interpolation inside each tier
-  let index = 0;
-  dotsWithDistance.forEach(({ dot, data, dist }) => {
-    let growthFactor = 1; // default no growth
+  let tierIndex = 0; // para recorrer tiers
+  let tierCount = 0; // contar dentro de cada tier
 
-    for (const tier of tiers) {
-      if (index < tier.count) {
-        // normalize distance inside tier [0..maxDist]
-        // maxDist here can be hoverRadius or max distance of that tier
-        const maxDistInTier = hoverRadius;
-        const normalizedDist = dist / maxDistInTier;
-
-        // Smooth growth factor decreasing from maxFactor to 1 within tier
-        growthFactor = tier.maxFactor - (tier.maxFactor - 1) * normalizedDist;
-
-        break;
-      }
-      index++;
+  dotsWithDistance.forEach(({ dot, data, dist }, i) => {
+    // Avanzar al tier correcto
+    while (tierIndex < tiers.length && tierCount >= tiers[tierIndex].count) {
+      tierCount = 0;
+      tierIndex++;
     }
 
-    // If dot is outside all tiers (index > sum counts), growthFactor stays 1
+    let growthFactor = 1;
+
+    if (tierIndex < tiers.length) {
+      const tier = tiers[tierIndex];
+      const normalizedDist = dist / hoverRadius;
+      growthFactor = tier.maxFactor - (tier.maxFactor - 1) * normalizedDist;
+      tierCount++;
+    }
 
     const newEffectiveRadius = data.scaledRadius * growthFactor;
 
@@ -714,21 +702,18 @@ function handleMouseMove(event) {
     dot.style.left = `${data.scaledCenterX - newEffectiveRadius}px`;
     dot.style.top = `${data.scaledCenterY - newEffectiveRadius}px`;
 
-    // Color changes as before with growth factor
     if (growthFactor > 1) {
       const baseHue = 227;
       const baseSaturation = 17;
       const baseLightness = 31;
-      const newLightness = baseLightness + (growthFactor - 1) * 50; // more contrast
+      const newLightness = baseLightness + (growthFactor - 1) * 50;
       dot.style.backgroundColor = `hsl(${baseHue}, ${baseSaturation}%, ${Math.min(newLightness, 80)}%)`;
     } else {
       dot.style.backgroundColor = '#42495F';
     }
-
-    index++;
   });
 
-  // Reset dots outside hoverRadius to original size/color
+  // Resetear dots fuera del radio
   dots.forEach(dot => {
     if (!dotsWithDistance.find(d => d.dot === dot)) {
       const data = initialDotData.get(dot);
@@ -740,6 +725,7 @@ function handleMouseMove(event) {
     }
   });
 }
+
   function handleMouseLeave() {
     updateDotsLayout();
     dots.forEach(dot => {
