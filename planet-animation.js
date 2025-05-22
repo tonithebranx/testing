@@ -651,7 +651,7 @@
   updateDotsLayout();
   window.addEventListener('resize', updateDotsLayout);
 
-  const hoverRadius = 80; 
+  const hoverRadius = 100; 
   const maxGrowthFactor = 2; // fallback
 
 function handleMouseMove(event) {
@@ -671,7 +671,7 @@ function handleMouseMove(event) {
   dotsWithDistance.sort((a, b) => a.dist - b.dist);
 
   const tiers = [
-    { count: 1, maxFactor: 3 },
+    { count: 1, maxFactor: 2.7 },
     { count: 2, maxFactor: 2 },
     { count: 4, maxFactor: 1.5 },
     { count: 6, maxFactor: 1.2 }
